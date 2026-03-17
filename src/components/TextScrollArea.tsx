@@ -1,9 +1,15 @@
 /**
- * Componente de Área de Leitura com Auto-Scroll
- * Sincroniza o scroll do texto com o tempo restante
+ * Componente de Área de Leitura com Auto-Scroll Inteligente
+ * 
+ * Recursos:
+ * - Auto-scroll 30% mais agressivo para leitores avançados
+ * - Scroll manual permitido (usuário tem controle total)
+ * - Auto-scroll pausa quando usuário rola manualmente
+ * - Retoma auto-scroll após 2s de inatividade
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export type FontSize = 'normal' | 'grande' | 'enorme';
 
@@ -27,22 +33,67 @@ export function TextScrollArea({
   fontSize = 'normal' 
 }: TextScrollAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isManualScrolling, setIsManualScrolling] = useState(false);
+  const manualScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAutoScrollRef = useRef(0);
 
-  // Auto-scroll sincronizado com o tempo
+  // Detectar scroll manual do usuário
   useEffect(() => {
-    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const now = Date.now();
+      
+      // Se o scroll aconteceu logo após auto-scroll, ignore
+      if (now - lastAutoScrollRef.current < 100) return;
+      
+      // Usuário está rolando manualmente
+      setIsManualScrolling(true);
+      
+      // Limpar timeout anterior
+      if (manualScrollTimeoutRef.current) {
+        clearTimeout(manualScrollTimeoutRef.current);
+      }
+      
+      // Retomar auto-scroll após 2s de inatividade
+      manualScrollTimeoutRef.current = setTimeout(() => {
+        setIsManualScrolling(false);
+      }, 2000);
+    };
+
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      if (manualScrollTimeoutRef.current) {
+        clearTimeout(manualScrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Auto-scroll sincronizado e 30% mais agressivo
+  useEffect(() => {
+    if (!scrollRef.current || isManualScrolling) return;
     
     const el = scrollRef.current;
     const elapsed = duration - timeLeft;
-    const progress = Math.min(1, elapsed / duration); // 0 a 1
+    
+    // Auto-scroll 30% mais rápido (1.3x) para leitores avançados
+    const adjustedProgress = Math.min(1, (elapsed / duration) * 1.3);
+    
     const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+    const targetScroll = adjustedProgress * maxScroll;
+    
+    // Registrar timestamp do auto-scroll
+    lastAutoScrollRef.current = Date.now();
     
     // Atualiza scroll suavemente
     el.scrollTo({
-      top: progress * maxScroll,
+      top: targetScroll,
       behavior: 'smooth'
     });
-  }, [timeLeft, duration]);
+  }, [timeLeft, duration, isManualScrolling]);
 
   // Formatar parágrafos do texto
   const paragraphs = content.split('\n').filter(p => p.trim());
@@ -52,10 +103,30 @@ export function TextScrollArea({
       {/* Gradiente fade no topo */}
       <div className="absolute top-0 left-0 right-0 h-20 bg-linear-to-b from-stone-50 to-transparent pointer-events-none z-10" />
       
-      {/* Área de texto com scroll controlado */}
+      {/* Indicador de scroll manual permitido */}
+      {!isManualScrolling && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-stone-200 shadow-sm animate-bounce">
+          <ChevronDown className="w-4 h-4 text-green-600" />
+          <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">
+            Pode rolar
+          </span>
+        </div>
+      )}
+      
+      {/* Indicador de scroll manual ativo */}
+      {isManualScrolling && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-green-500 px-3 py-1.5 rounded-full shadow-lg">
+          <ChevronDown className="w-4 h-4 text-white" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+            Rolando
+          </span>
+        </div>
+      )}
+      
+      {/* Área de texto com scroll MANUAL permitido */}
       <div
         ref={scrollRef}
-        className="h-full overflow-hidden px-6 py-8 bg-linear-to-br from-white to-stone-50 rounded-3xl border border-stone-200 shadow-inner"
+        className="h-full overflow-y-auto px-6 py-8 bg-linear-to-br from-white to-stone-50 rounded-3xl border border-stone-200 shadow-inner"
         style={{ 
           scrollBehavior: 'smooth',
           WebkitOverflowScrolling: 'touch'
