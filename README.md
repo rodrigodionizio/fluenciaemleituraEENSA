@@ -42,15 +42,51 @@ A fluência em leitura é um dos pilares da compreensão textual. Estudos mostra
 
 ## 🎮 Funcionalidades
 
+### ⭐ v2.0 - Inteligência Artificial e Biblioteca de Textos
+
+#### 🤖 IA Ouvinte (Gemini 2.0 Flash)
+- **Análise Pedagógica Inteligente**: IA analisa a leitura do aluno e fornece feedback personalizado
+- **Métricas Detalhadas**: Precisão, palavras corretas, destaque de conquistas
+- **Feedback Encorajador**: Linguagem acolhedora e motivadora para crianças (8-14 anos)
+- **Identificação de Pontos Fortes**: Destaca palavras difíceis que o aluno acertou
+- **Sugestões de Melhoria**: Indica áreas de crescimento de forma positiva
+
+#### 📚 Biblioteca de Textos
+- **22 Textos Curados**: Seleção pedagógica diversificada
+  - 🎭 Trava-línguas (6 textos) - Treino de dicção e velocidade
+  - 🦊 Fábulas (5 textos) - Narrativas com moral
+  - 📖 Narrativas (3 textos) - Histórias envolventes
+  - 📰 Informativos (2 textos) - Textos expositivos
+  - 🎨 Poesia (2 textos) - Textos líricos
+- **Seleção Inteligente**: Algoritmo escolhe automaticamente o texto ideal para o tempo definido
+- **Diversidade de Dificuldades**: Fácil, médio e difícil
+- **Métricas de Leitura**: Cada texto tem WPM (Palavras Por Minuto) calibradas e dicas pedagógicas
+
+#### 🎤 Reconhecimento de Voz
+- **Captura em Tempo Real**: Web Speech API nativa (sem dependências externas)
+- **Suporte pt-BR**: Otimizado para português brasileiro
+- **Opcional e Não-Bloqueante**: Funciona mesmo se o navegador não suportar
+- **Indicador Visual**: Badge "Ouvindo sua leitura..." quando ativo
+
+#### 📜 Área de Leitura
+- **Auto-Scroll Inteligente**: Texto rola sincronizado com o timer
+- **Tamanhos de Fonte**: Normal, grande e enorme (acessibilidade)
+- **Gradientes de Foco**: Fade in/out para concentração na linha atual
+- **Design Limpo**: Fundo suave, tipografia legível
+
 ### Para Professores
 - ⚙️ **Configuração Flexível**: Ajuste o tempo de leitura de 10 segundos até 5 minutos
 - 🎨 **Interface Intuitiva**: Design limpo e adaptado à identidade visual da EENSA
 - 🔊 **Controle de Som**: Ative ou desative os efeitos sonoros conforme necessário
+- 🎤 **Toggle de Microfone**: Habilite/desabilite feedback com IA
 - 📱 **Responsivo**: Funciona em computadores, tablets e smartphones
+- 📊 **Métricas Detalhadas**: Veja precisão, palavras corretas, tempo restante
 
 ### Para Alunos
 - 💣 **Cronômetro Visual**: Uma bomba animada que torna o tempo visível e emocionante
-- 🎉 **Celebração de Conquistas**: Confetes e animações ao completar a leitura
+- 📖 **Textos Variados**: Nunca repete - sempre um texto novo e apropriado
+- 🎉 **Celebração de Conquistas**: Confetes, emojis e animações ao completar a leitura
+- 🏆 **Feedback Inteligente**: A IA reconhece suas conquistas e te encoraja
 - 🎵 **Feedback Sonoro**: Sons que auxiliam na percepção do tempo
 - ❤️ **Design Acolhedor**: Cores e elementos que criam um ambiente positivo
 
@@ -102,8 +138,12 @@ A aplicação é um **PWA (Progressive Web App)** completo, otimizado para dispo
 - **[Lucide React](https://lucide.dev/)** `v0.546.0` - Ícones modernos e personalizáveis
 - **[Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)** `v1.9.4` - Efeitos de celebração
 
+### IA e APIs
+- **[Google Gemini 2.0 Flash](https://ai.google.dev/)** - Modelo de IA para análise pedagógica de leitura
+- **Web Speech API** - Reconhecimento de voz nativo para captura da leitura
+- **Web Audio API** - Geração de efeitos sonoros dinâmicos
+
 ### Desenvolvimento
-- **Web Audio API** - Para geração de efeitos sonoros dinâmicos
 - **Express** `v4.21.2` - Servidor HTTP para produção
 - **dotenv** `v17.2.3` - Gerenciamento de variáveis de ambiente
 
@@ -155,17 +195,42 @@ npm run preview
 
 ### Para o Professor
 
-1. **Configure o Tempo**: Use os botões **+** e **-** ou o controle deslizante para definir o tempo de leitura adequado ao nível da turma
-2. **Prepare o Material**: Selecione o texto que será lido pelo aluno
-3. **Inicie o Desafio**: Clique em **"INICIAR LEITURA"**
-4. **Acompanhe**: Observe o aluno realizar a leitura enquanto o cronômetro visual conta o tempo
-5. **Finalize**: Quando o aluno terminar a leitura, clique em **"CONCLUÍDO!"**
+#### Configuração Inicial
+
+1. **Configure a API do Gemini** (opcional, mas recomendado):
+   - Obtenha uma chave API gratuita em [Google AI Studio](https://aistudio.google.com/apikey)
+   - Crie um arquivo `.env` na raiz do projeto:
+   ```bash
+   VITE_GEMINI_API_KEY=sua_chave_aqui
+   ```
+   - **Sem API key**: A aplicação funciona normalmente com feedback genérico (sem análise de IA)
+
+2. **Configure o Tempo**: Use os botões **+** e **-** ou o controle deslizante para definir o tempo de leitura adequado ao nível da turma (10s a 5min)
+
+3. **Ative a IA Ouvinte** (opcional):
+   - Toggle na tela de configuração
+   - Quando ativo: captura voz do aluno e fornece feedback inteligente
+   - Quando desativo: funciona como cronômetro simples
+
+4. **Inicie o Desafio**: Clique em **"INICIAR LEITURA"**
+   - Um texto apropriado para o tempo será selecionado automaticamente
+   - O aluno verá o texto com auto-scroll sincronizado
+
+5. **Acompanhe**: Observe o aluno realizar a leitura enquanto:
+   - O cronômetro visual conta o tempo (mini-bomba no topo)
+   - O texto rola automaticamente
+   - O microfone captura a leitura (se habilitado)
+
+6. **Finalize**: Quando o aluno terminar, clique em **"TEXTO MEMORIZADO!"**
+   - A IA analisa a performance (se habilitada)
+   - Feedback detalhado aparece: emoji, precisão, palavras corretas, destaque, encorajamento
 
 ### Estados da Aplicação
 
-- **⚙️ Configuração**: Tela inicial para ajustar parâmetros
-- **⏰ Em Andamento**: Cronômetro ativo com a bomba animada
-- **✅ Sucesso**: Celebração quando o aluno completa a leitura a tempo
+- **⚙️ Configuração**: Tela inicial para ajustar tempo e microfone
+- **⏰ Em Andamento**: Área de leitura com auto-scroll + cronômetro visual
+- **🔄 Analisando**: IA processa a leitura (2-3 segundos)
+- **✅ Sucesso**: Feedback detalhado da IA ou celebração simples
 - **❌ Falha**: Feedback quando o tempo se esgota (sem punições, apenas reinício)
 
 ---
@@ -190,14 +255,32 @@ A aplicação utiliza as cores oficiais da Escola Estadual Nossa Senhora Apareci
 ```
 fluenciaemleituraEENSA/
 ├── src/
-│   ├── App.tsx           # Componente principal da aplicação
-│   ├── main.tsx          # Entry point do React
-│   └── index.css         # Estilos globais
-├── index.html            # Template HTML
-├── package.json          # Dependências e scripts
-├── tsconfig.json         # Configuração TypeScript
-├── vite.config.ts        # Configuração Vite
-├── .gitignore           # Arquivos ignorados pelo Git
+│   ├── components/
+│   │   └── TextScrollArea.tsx     # Área de leitura com auto-scroll
+│   ├── data/
+│   │   └── texts.ts               # Biblioteca de 22 textos curados
+│   ├── hooks/
+│   │   └── useSpeechRecognition.ts # Hook de reconhecimento de voz
+│   ├── services/
+│   │   └── gemini.ts              # Integração com Gemini AI
+│   ├── types/
+│   │   └── index.ts               # TypeScript definitions
+│   ├── utils/
+│   │   └── textSelector.ts        # Algoritmo de seleção inteligente
+│   ├── App.tsx                    # Componente principal da aplicação
+│   ├── main.tsx                   # Entry point do React
+│   ├── index.css                  # Estilos globais
+│   └── vite-env.d.ts             # Type declarations
+├── public/
+│   ├── pwa-192x192.png           # Ícone PWA 192x192
+│   └── pwa-512x512.png           # Ícone PWA 512x512
+├── .env                          # Variáveis de ambiente (API keys)
+├── .env.example                  # Template de variáveis de ambiente
+├── index.html                    # Template HTML
+├── package.json                  # Dependências e scripts
+├── tsconfig.json                 # Configuração TypeScript
+├── vite.config.ts                # Configuração Vite + PWA
+└── .gitignore                    # Arquivos ignorados pelo Git
 ├── .env.example         # Exemplo de variáveis de ambiente
 └── README.md            # Este arquivo
 ```
@@ -221,6 +304,46 @@ fluenciaemleituraEENSA/
 - 🎯 **Foco na Fluência**: Priorize velocidade + precisão + prosódia
 - 💬 **Feedback Construtivo**: Use os resultados para orientar, não punir
 - 🔄 **Prática Regular**: A consistência é mais importante que sessões longas esporádicas
+
+---
+
+## 🌐 Compatibilidade e Limitações
+
+### Navegadores Compatíveis
+
+#### ✅ Suporte Completo (IA + Voz)
+- **Chrome/Edge** (Desktop e Android) - Recomendado
+- **Opera** (Desktop e Android)
+- **Samsung Internet** (Android)
+
+#### ⚠️ Suporte Parcial (IA sem Voz)
+- **Safari** (macOS e iOS) - Reconhecimento de voz limitado
+- **Firefox** (Desktop) - Sem Web Speech API
+
+#### 📱 Mobile
+- **Android**: Suporte completo em Chrome, Edge, Samsung Internet
+- **iOS/iPadOS**: Funciona, mas sem reconhecimento de voz no Safari
+
+### Graceful Degradation
+
+A aplicação foi projetada para funcionar em **qualquer** navegador, adaptando recursos:
+
+| Recurso | Sem API Key | Sem Microfone | Ambos funcionando |
+|---------|-------------|---------------|-------------------|
+| **Cronômetro** | ✅ | ✅ | ✅ |
+| **Biblioteca de Textos** | ✅ | ✅ | ✅ |
+| **Auto-scroll** | ✅ | ✅ | ✅ |
+| **Captura de Voz** | ❌ | ❌ | ✅ |
+| **Análise com IA** | ❌ | ⚠️ Feedback genérico | ✅ |
+| **Feedback Detalhado** | ⚠️ Simples | ⚠️ Por tempo | ✅ Completo |
+
+**✨ A experiência é sempre funcional, independente do navegador ou configuração!**
+
+### Requisitos de Permissões
+
+- **Microfone**: Necessário autorizar acesso ao microfone quando habilitado
+- **Internet**: Primeira visita requer conexão (depois funciona offline via PWA)
+- **API Key**: Obtenha gratuitamente em [Google AI Studio](https://aistudio.google.com/apikey)
 
 ---
 
