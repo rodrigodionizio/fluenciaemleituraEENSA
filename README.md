@@ -56,12 +56,45 @@ A fluência em leitura é um dos pilares da compreensão textual. Estudos mostra
 
 ---
 
+## � PWA - Progressive Web App
+
+**Aplicativo instalável e funciona offline!**
+
+A aplicação é um **PWA (Progressive Web App)** completo, otimizado para dispositivos móveis:
+
+### ✨ Recursos PWA
+- 📲 **Instalável**: Adicione à tela inicial do seu dispositivo
+- 🔌 **Offline First**: Funciona sem internet após primeira visita
+- ⚡ **Carregamento Instantâneo**: Cache inteligente para performance máxima
+- 📱 **Mobile First**: Interface otimizada para touch e dispositivos móveis
+- 🎨 **App Nativo**: Funciona em tela cheia, sem barra do navegador
+- 🔄 **Auto-update**: Atualização automática quando nova versão disponível
+
+### 💾 Como Instalar
+
+#### Android
+1. Acesse https://rodrigodionizio.github.io/fluenciaemleituraEENSA/
+2. Toque no menu e selecione **"Instalar aplicativo"**
+
+#### iOS
+1. Abra no Safari
+2. Toque em **Compartilhar** (⬆️) → **"Adicionar à Tela Inicial"**
+
+#### Desktop
+1. Clique no ícone **⊕** na barra de endereço
+2. Selecione **"Instalar"**
+
+📄 Veja mais detalhes em [PWA-INFO.md](PWA-INFO.md)
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 ### Core
 - **[React](https://react.dev/)** `v19.0.0` - Biblioteca JavaScript para construção da interface
 - **[TypeScript](https://www.typescriptlang.org/)** `v5.8.2` - Superset tipado de JavaScript
 - **[Vite](https://vitejs.dev/)** `v6.2.0` - Build tool moderna e rápida
+- **[Vite PWA Plugin](https://vite-pwa-org.netlify.app/)** - PWA com service worker e cache
 
 ### UI/UX
 - **[Tailwind CSS](https://tailwindcss.com/)** `v4.1.14` - Framework CSS utilitário
