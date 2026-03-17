@@ -22,6 +22,7 @@ import {
   Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import logoEENSA from './images/logo_eensa.png';
 
 type GameState = 'SETUP' | 'RUNNING' | 'SUCCESS' | 'FAILURE';
 
@@ -154,17 +155,15 @@ export default function App() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // School Logo Component (Stylized)
+  // School Logo Component (Official)
   const SchoolLogo = () => (
     <div className="flex items-center gap-3">
-      <div className="relative w-10 h-10 flex items-center justify-center">
-        <div className="absolute inset-0 bg-white rounded-lg shadow-sm"></div>
-        <svg viewBox="0 0 100 100" className="w-8 h-8 relative z-10">
-          <path d="M20,50 Q50,20 80,50" fill="none" stroke={COLORS.accentGreen} strokeWidth="8" />
-          <path d="M20,60 Q50,30 80,60" fill="none" stroke={COLORS.teal} strokeWidth="8" />
-          <path d="M20,70 Q50,40 80,70" fill="none" stroke={COLORS.orange} strokeWidth="8" />
-          <circle cx="50" cy="20" r="8" fill={COLORS.yellow} />
-        </svg>
+      <div className="relative w-12 h-12 flex items-center justify-center">
+        <img 
+          src={logoEENSA} 
+          alt="Logo EENSA" 
+          className="w-full h-full object-contain drop-shadow-sm"
+        />
       </div>
       <div className="flex flex-col">
         <span className="font-black text-xl leading-none tracking-tighter" style={{ color: COLORS.primary }}>EENSA</span>
