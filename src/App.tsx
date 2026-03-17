@@ -368,7 +368,7 @@ export default function App() {
               <button 
                 onClick={handleSuccess}
                 style={{ backgroundColor: COLORS.accentGreen }}
-                className="w-full text-white py-7 rounded-[2rem] font-black text-2xl shadow-2xl shadow-green-100 transition-all active:scale-95 flex items-center justify-center gap-4 border-b-8 border-green-700"
+                className="w-full text-white py-7 rounded-4xl font-black text-2xl shadow-2xl shadow-green-100 transition-all active:scale-95 flex items-center justify-center gap-4 border-b-8 border-green-700"
               >
                 <CheckCircle className="w-10 h-10" />
                 CONCLUÍDO!
@@ -480,9 +480,9 @@ export default function App() {
       <footer className="p-8 bg-white border-t border-stone-100">
         <div className="max-w-lg mx-auto flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 text-stone-300">
-            <div className="w-8 h-[1px] bg-stone-200"></div>
+            <div className="w-8 h-px bg-stone-200"></div>
             <Heart className="w-4 h-4 fill-stone-200" />
-            <div className="w-8 h-[1px] bg-stone-200"></div>
+            <div className="w-8 h-px bg-stone-200"></div>
           </div>
           <div className="text-center">
             <p className="text-[11px] font-black uppercase tracking-[0.3em]" style={{ color: COLORS.primary }}>
