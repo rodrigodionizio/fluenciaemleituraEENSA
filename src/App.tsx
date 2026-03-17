@@ -19,10 +19,23 @@ import {
   Heart,
   GraduationCap,
   MapPin,
-  Play
+  Play,
+  Mic,
+  MicOff,
+  Sparkles,
+  Brain,
+  Target,
+  TrendingUp,
+  Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import logoEENSA from './images/logo_eensa.png';
+import { TextScrollArea } from './components/TextScrollArea';
+import { useSpeechRecognition } from './hooks/useSpeechRecognition';
+import { analyzeReading } from './services/gemini';
+import { selectTextForDuration } from './utils/textSelector';
+import { TEXTS } from './data/texts';
+import type { ReadingText, ReadingAnalysis } from './types';
 
 type GameState = 'SETUP' | 'RUNNING' | 'SUCCESS' | 'FAILURE';
 
@@ -97,9 +110,30 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [isMuted, setIsMuted] = useState(false);
   
+  // NEW: v2.0 AI-powered reading states
+  const [selectedText, setSelectedText] = useState<ReadingText | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<ReadingAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [currentScore, setCurrentScore] = useState(0);
+  
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const speechRecognition = useSpeechRecognition();
 
   const startTimer = () => {
+    // v2.0: Select optimal text for given duration
+    const text = selectTextForDuration(duration, TEXTS);
+    setSelectedText(text);
+    
+    // Reset AI states
+    setAiAnalysis(null);
+    speechRecognition.resetTranscript();
+    
+    // Start speech recognition if enabled
+    if (micEnabled && speechRecognition.isSupported) {
+      speechRecognition.startListening();
+    }
+    
     setTimeLeft(duration);
     setGameState('RUNNING');
   };
@@ -108,10 +142,43 @@ export default function App() {
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     stopTimer();
-    setGameState('SUCCESS');
+    
+    // Stop speech recognition
+    if (speechRecognition.isListening) {
+      speechRecognition.stopListening();
+    }
+    
+    // Play success sound
     playSound('SUCCESS', isMuted);
+    setGameState('SUCCESS');
+    
+    // Analyze reading with AI
+    if (selectedText && micEnabled) {
+      setIsAnalyzing(true);
+      
+      try {
+        const analysis = await analyzeReading({
+          originalText: selectedText.content,
+          transcript: speechRecognition.transcript,
+          timeLeft,
+          duration,
+          textTitle: selectedText.title,
+          difficulty: selectedText.difficulty
+        });
+        
+        setAiAnalysis(analysis);
+        setCurrentScore(Math.round((analysis.accuracy / 100) * 1000));
+      } catch (error) {
+        console.error('Failed to analyze reading:', error);
+        setAiAnalysis(null);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }
+    
+    // Confetti celebration
     confetti({
       particleCount: 150,
       spread: 70,
@@ -122,14 +189,31 @@ export default function App() {
 
   const handleFailure = () => {
     stopTimer();
+    
+    // Stop speech recognition
+    if (speechRecognition.isListening) {
+      speechRecognition.stopListening();
+    }
+    
     setGameState('FAILURE');
     playSound('BOOM', isMuted);
   };
 
   const resetGame = () => {
     stopTimer();
+    
+    // Stop speech recognition if active
+    if (speechRecognition.isListening) {
+      speechRecognition.stopListening();
+    }
+    
+    // Reset all states
     setGameState('SETUP');
     setTimeLeft(duration);
+    setSelectedText(null);
+    setAiAnalysis(null);
+    setCurrentScore(0);
+    speechRecognition.resetTranscript();
   };
 
   useEffect(() => {
@@ -258,6 +342,31 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* NEW: Microphone Toggle for AI Feedback */}
+                {speechRecognition.isSupported && (
+                  <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${micEnabled ? 'bg-green-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
+                          {micEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-stone-800">IA Ouvinte</p>
+                          <p className="text-[10px] text-stone-500 font-medium">
+                            {micEnabled ? 'Ativado - Feedback Inteligente' : 'Desativado'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setMicEnabled(!micEnabled)}
+                        className={`w-12 h-7 rounded-full transition-all ${micEnabled ? 'bg-green-500' : 'bg-stone-300'} relative`}
+                      >
+                        <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all ${micEnabled ? 'right-1' : 'left-1'} shadow-sm`}></div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <button 
                   onClick={startTimer}
                   style={{ backgroundColor: COLORS.primary }}
@@ -282,79 +391,25 @@ export default function App() {
           {gameState === 'RUNNING' && (
             <motion.div 
               key="running"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full flex flex-col items-center gap-12"
+              className="w-full flex flex-col gap-4 h-full max-h-[calc(100vh-12rem)]"
             >
-              <div className="text-center">
-                <div className="text-8xl font-black tabular-nums text-stone-800 mb-2 tracking-tighter">
-                  {formatTime(timeLeft)}
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-stone-100 text-stone-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                  <Play className="w-3 h-3 fill-stone-600" /> Lendo agora...
-                </div>
-              </div>
-
-              <div className="relative w-64 h-64 flex items-center justify-center">
-                <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 100 100">
-                  {/* Fuse Path - Longer and more defined */}
-                  <motion.path
-                    id="fuse-path"
-                    d="M 50 20 C 70 20, 80 -10, 100 10"
-                    fill="transparent"
-                    stroke="#78350f"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    initial={{ pathLength: 1 }}
-                    animate={{ pathLength: timeLeft / duration }}
-                    transition={{ duration: 1, ease: "linear" }}
-                  />
-                  {/* Spark - Perfectly synced with pathLength */}
-                  <motion.g
-                    initial={{ x: 100, y: 10 }}
-                    animate={{ 
-                      // Using offsetDistance to follow the path perfectly
-                      offsetDistance: `${100 - (timeLeft / duration) * 100}%`
-                    }}
-                    style={{ 
-                      offsetPath: "path('M 50 20 C 70 20, 80 -10, 100 10')",
-                      offsetRotate: "auto",
-                    }}
-                    transition={{ duration: 1, ease: "linear" }}
-                  >
-                    <motion.circle 
-                      r="5" 
-                      fill={COLORS.yellow}
-                      animate={{ scale: [1, 1.8, 1], opacity: [0.8, 1, 0.8] }}
-                      transition={{ repeat: Infinity, duration: 0.15 }}
-                    />
-                    <motion.circle 
-                      r="3" 
-                      fill={COLORS.orange}
-                      animate={{ scale: [1, 2.5, 1] }}
-                      transition={{ repeat: Infinity, duration: 0.1 }}
-                    />
-                    {/* Particle sparks */}
-                    <motion.circle r="1" fill="white" animate={{ x: [0, 10], y: [0, -10], opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.3 }} />
-                    <motion.circle r="1" fill="white" animate={{ x: [0, -10], y: [0, 5], opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.25, delay: 0.1 }} />
-                  </motion.g>
-                </svg>
-
+              {/* Mini Bomb + Timer Bar at top */}
+              <div className="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-lg border border-stone-100">
                 <motion.div 
-                  className="w-48 h-48 bg-stone-900 rounded-full relative shadow-2xl flex items-center justify-center border-4 border-stone-800"
+                  className="w-16 h-16 bg-stone-900 rounded-full relative shadow-xl flex items-center justify-center shrink-0"
                   animate={{ 
-                    scale: timeLeft < 10 ? [1, 1.08, 1] : 1,
-                    rotate: timeLeft < 5 ? [-2, 2, -2] : 0
+                    scale: timeLeft < 10 ? [1, 1.06, 1] : 1,
+                    rotate: timeLeft < 5 ? [-1, 1, -1] : 0
                   }}
                   transition={{ 
                     repeat: Infinity, 
                     duration: timeLeft < 5 ? 0.08 : 0.4 
                   }}
                 >
-                  <div className="absolute top-4 left-1/4 w-8 h-4 bg-stone-700/50 rounded-full blur-sm rotate-45"></div>
-                  <Bomb className="w-20 h-20 text-stone-800" />
-                  
+                  <Bomb className="w-8 h-8 text-stone-800" />
                   {timeLeft < 10 && (
                     <motion.div 
                       className="absolute inset-0 rounded-full bg-red-500/30"
@@ -363,62 +418,189 @@ export default function App() {
                     />
                   )}
                 </motion.div>
+
+                <div className="flex-1">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-3xl font-black tabular-nums text-stone-800">
+                      {formatTime(timeLeft)}
+                    </span>
+                    {selectedText && (
+                      <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                        {selectedText.category}
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full rounded-full"
+                      style={{ 
+                        backgroundColor: timeLeft < 10 ? COLORS.red : timeLeft < 30 ? COLORS.orange : COLORS.accentGreen,
+                        width: `${(timeLeft / duration) * 100}%`
+                      }}
+                      transition={{ duration: 1, ease: "linear" }}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <button 
-                onClick={handleSuccess}
-                style={{ backgroundColor: COLORS.accentGreen }}
-                className="w-full text-white py-7 rounded-4xl font-black text-2xl shadow-2xl shadow-green-100 transition-all active:scale-95 flex items-center justify-center gap-4 border-b-8 border-green-700"
-              >
-                <CheckCircle className="w-10 h-10" />
-                CONCLUÍDO!
-              </button>
+              {/* Text Reading Area - Auto Scrolling */}
+              {selectedText && (
+                <TextScrollArea 
+                  content={selectedText.content}
+                  timeLeft={timeLeft}
+                  duration={duration}
+                />
+              )}
+
+              {/* Success Button + Mic Status */}
+              <div className="space-y-3">
+                {micEnabled && speechRecognition.isListening && (
+                  <div className="flex items-center justify-center gap-2 text-green-600 animate-pulse">
+                    <Mic className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Ouvindo sua leitura...</span>
+                  </div>
+                )}
+                
+                <button 
+                  onClick={handleSuccess}
+                  style={{ backgroundColor: COLORS.accentGreen }}
+                  className="w-full text-white py-6 rounded-4xl font-black text-xl shadow-2xl shadow-green-100 transition-all active:scale-95 flex items-center justify-center gap-4 border-b-8 border-green-700"
+                >
+                  <CheckCircle className="w-8 h-8" />
+                  TEXTO MEMORIZADO!
+                </button>
+              </div>
             </motion.div>
           )}
 
           {gameState === 'SUCCESS' && (
             <motion.div 
               key="success"
-              initial={{ opacity: 0, scale: 0.5 }}
+              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full text-center space-y-8"
+              className="w-full space-y-6 max-w-md"
             >
-              <div className="relative inline-block">
-                <motion.div 
-                  initial={{ rotate: -10 }}
-                  animate={{ rotate: 10 }}
-                  transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
-                  className="p-10 rounded-full shadow-2xl"
-                  style={{ backgroundColor: COLORS.yellow }}
-                >
-                  <Trophy className="w-32 h-32 text-white" />
-                </motion.div>
-                <motion.div 
-                  className="absolute -top-4 -right-4 bg-white text-green-600 p-4 rounded-full shadow-xl border-4 border-green-50"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <CheckCircle className="w-10 h-10" />
-                </motion.div>
-              </div>
+              {/* Loading State while AI analyzes */}
+              {isAnalyzing && (
+                <div className="text-center space-y-4 py-12">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    className="w-20 h-20 mx-auto"
+                  >
+                    <Brain className="w-full h-full text-purple-500" />
+                  </motion.div>
+                  <p className="text-lg font-bold text-stone-600">
+                    A IA está analisando sua leitura...
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-4">
-                <h2 className="text-5xl font-black" style={{ color: COLORS.primary }}>PARABÉNS!</h2>
-                <p className="text-xl text-stone-600 font-medium max-w-xs mx-auto">
-                  Você brilhou! A leitura abre portas para novas histórias.
-                </p>
-              </div>
+              {/* AI Analysis Results */}
+              {!isAnalyzing && aiAnalysis && (
+                <>
+                  {/* Emoji Header */}
+                  <div className="text-center">
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", bounce: 0.5 }}
+                      className="text-8xl mb-4"
+                    >
+                      {aiAnalysis.emoji}
+                    </motion.div>
+                    <h2 className="text-4xl font-black" style={{ color: COLORS.primary }}>
+                      PARABÉNS!
+                    </h2>
+                  </div>
 
-              <div className="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm inline-block">
-                <p className="text-stone-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Tempo de Conquista</p>
-                <p className="text-4xl font-black" style={{ color: COLORS.teal }}>{formatTime(timeLeft)}</p>
-              </div>
+                  {/* Main Feedback */}
+                  <div className="bg-linear-to-br from-green-50 to-teal-50 p-6 rounded-3xl border-2 border-green-100">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="w-6 h-6 text-green-600 shrink-0 mt-1" />
+                      <p className="text-base font-medium text-stone-700 leading-relaxed">
+                        {aiAnalysis.feedback}
+                      </p>
+                    </div>
+                  </div>
 
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Accuracy */}
+                    <div className="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-5 h-5 text-blue-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                          Precisão
+                        </span>
+                      </div>
+                      <p className="text-3xl font-black text-blue-600">
+                        {aiAnalysis.accuracy}%
+                      </p>
+                    </div>
+
+                    {/* Words Correct */}
+                    <div className="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-5 h-5 text-teal-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                          Palavras
+                        </span>
+                      </div>
+                      <p className="text-3xl font-black text-teal-600">
+                        {aiAnalysis.wordsCorrect}/{aiAnalysis.wordsTotal}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Highlight Card */}
+                  <div className="bg-linear-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border-2 border-yellow-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Award className="w-4 h-4 text-orange-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">
+                        Destaque
+                      </span>
+                    </div>
+                    <p className="text-lg font-bold text-orange-900">
+                      {aiAnalysis.highlight}
+                    </p>
+                  </div>
+
+                  {/* Encouragement */}
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-green-700 italic">
+                      "{aiAnalysis.encouragement}"
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Fallback without AI */}
+              {!isAnalyzing && !aiAnalysis && (
+                <div className="text-center space-y-4">
+                  <div className="text-7xl">🏆</div>
+                  <h2 className="text-4xl font-black" style={{ color: COLORS.primary }}>
+                    PARABÉNS!
+                  </h2>
+                  <p className="text-lg text-stone-600 font-medium">
+                    Você brilhou! A leitura abre portas para novas histórias.
+                  </p>
+                  <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm inline-block">
+                    <p className="text-stone-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                      Tempo de Conquista
+                    </p>
+                    <p className="text-4xl font-black" style={{ color: COLORS.teal }}>
+                      {formatTime(timeLeft)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* New Challenge Button */}
               <button 
                 onClick={resetGame}
                 style={{ backgroundColor: COLORS.primary }}
-                className="w-full text-white py-6 rounded-2xl font-black text-xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                className="w-full text-white py-6 rounded-3xl font-black text-xl transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl"
               >
                 <RotateCcw className="w-6 h-6" />
                 NOVO DESAFIO
