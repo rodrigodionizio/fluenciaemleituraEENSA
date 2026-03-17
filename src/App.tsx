@@ -167,7 +167,7 @@ export default function App() {
       </div>
       <div className="flex flex-col">
         <span className="font-black text-xl leading-none tracking-tighter" style={{ color: COLORS.primary }}>EENSA</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Escola Estadual</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Escola Estadual Nossa Senhora Aparecida</span>
       </div>
     </div>
   );
